@@ -469,7 +469,7 @@
 
 ### 017-2 댓글 삭제 (DB 에 남음 실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/f9f20356ca0ed7da621e35ddbab03601212759a9)**
 - **원인** : 017-1 테스트가 실패한다. 댓글 삭제 액션이 없다.
 - **작업**
   - 추가 : `ApiV1PostCommentController.delete(postId, id)` — `DELETE /api/v1/posts/{postId}/comments/{id}`, 응답 `RsData<Void>`
@@ -478,3 +478,18 @@
   - 댓글도 글을 통해 지운다. `deleteComment()` 는 글의 댓글 리스트에서 댓글을 빼기만 한다. 비교는 `BaseEntity.equals()` 의 id 비교를 쓴다.
   - 문제 : 리스트에서 빼는 것은 메모리 속 연결을 끊을 뿐이다. 관계의 주인은 `PostComment.post` 이고, 리스트 쪽(`mappedBy`)의 변화만으로는 JPA 가 아무 SQL 도 만들지 않는다.
   - 실패 확인 : 응답은 기대대로지만, `flush()`·`clear()` 뒤 DB 에서 다시 읽은 1번 글에 1번 댓글이 그대로 있어 `Expecting an empty Optional but was containing value: ...PostComment@1` 로 실패한다.
+
+### 017-3 고아 댓글 제거
+
+- **링크**
+- **원인** : 017-2 에서 댓글을 글의 리스트에서 빼도 DB 에서는 지워지지 않는다.
+- **작업**
+  - 수정 : `Post.comments`
+    - 이전 : `cascade = {PERSIST, REMOVE}`
+    - 이후 : `cascade = {PERSIST, REMOVE}, orphanRemoval = true`
+- **설명**
+  - `orphanRemoval = true` 이면 부모의 컬렉션에서 빠진 자식을 "고아"로 보고, flush 때 DELETE 한다. 그래서 `Post.deleteComment()` 처럼 리스트에서 빼는 것만으로 댓글이 삭제된다.
+  - 이 변경 감지는 영속성 컨텍스트가 관리하는 글에서만 동작하므로 삭제 액션에 `@Transactional` 이 필요하다.
+  - 결과 : `ApiV1PostCommentControllerTest.t5` 통과. 테스트 15개(샘플 데이터 1, 글 9, 댓글 5)가 모두 통과한다.
+  - 실행 확인 : 앱을 8093 포트로 띄워 모든 API 를 실제로 호출했다. 글·댓글 다건조회·단건조회·작성(201)·수정(200)·삭제(200), 없는 데이터 404, 검증 실패·잘못된 JSON 400 이 테스트와 같게 응답했다. 댓글 3건이 달린 1번 글 삭제, 댓글 삭제 뒤 재조회 404 로 cascade 와 고아 제거가 트랜잭션을 넘어서도 반영되는 것을 확인했다.
+  - 참고 : 실제 요청에서 검증 메시지는 서버 로케일을 따라 한국어(`공백일 수 없습니다`)로 나온다. 테스트는 MockMvc 의 기본 로케일(영어)이라 영어 메시지로 비교한다.
