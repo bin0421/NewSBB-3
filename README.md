@@ -29,7 +29,7 @@
 
 ### 001 프로젝트 생성
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/df3721f377b9c25868fa7c12a77c123ddbecfb61)**
 - **원인** : 아무것도 없는 상태에서 시작하므로 빌드·실행할 수 있는 스프링부트 프로젝트 뼈대가 필요하다.
 - **작업**
   - 추가 : Gradle 래퍼(9.8.2), `build.gradle.kts`, `settings.gradle.kts`, `.gitignore`, `.gitattributes`
@@ -39,3 +39,20 @@
   - 강사 저장소 첫 커밋과 같은 Spring Initializr 구성이다. 루트 프로젝트명 `back`, 패키지 `com.back`, Java 툴체인 25.
   - `.gitattributes` 로 `gradlew` 는 LF, `*.bat` 는 CRLF, `*.jar` 는 바이너리로 고정해 Windows 에서도 줄바꿈이 섞이지 않게 한다.
   - Initializr 가 만드는 `contextLoads` 테스트는 넣지 않는다. 이후 테스트는 모두 기능 단위로 먼저 작성한다.
+
+### 002 JPA·H2 설정
+
+- **링크**
+- **원인** : 글과 댓글을 저장할 DB 와 JPA 가 없다. 또 개발용 DB 와 테스트용 DB 를 나눠야 테스트가 개발 데이터를 건드리지 않는다.
+- **작업**
+  - 추가 : 의존성 `spring-boot-starter-data-jpa`, `spring-boot-h2console`, `h2`, `spring-boot-starter-data-jpa-test`
+  - 추가 : `application-dev.yaml` (파일 DB `./db_dev`), `application-test.yaml` (메모리 DB `db_test`)
+  - 추가 : `.gitignore` 에 `db_dev.*.db` 파일
+  - 수정 : `application.yaml`
+    - 이전 : 애플리케이션 이름만 설정
+    - 이후 : 기본 프로필 `dev`, `ddl-auto: update`, SQL 출력·바인딩 값 로그, `hikari.auto-commit: false`
+- **설명**
+  - `spring.profiles.active: dev` 로 평소에는 `application-dev.yaml` 의 파일 DB 를 쓴다. 테스트 클래스에 `@ActiveProfiles("test")` 를 붙이면 `application-test.yaml` 이 덮어써 메모리 DB 로 바뀌고, 테스트가 끝나면 DB 가 사라진다.
+  - `ddl-auto: update` 는 엔티티를 보고 테이블을 만들거나 컬럼을 추가한다. 아직 엔티티가 없으므로 이 단계에서 만들어지는 테이블은 없다.
+  - `auto-commit: false` 는 커넥션을 트랜잭션 단위로만 커밋하게 해, `@Transactional` 밖에서 쓰기가 자동으로 확정되지 않게 한다.
+  - `org.hibernate.orm.jdbc.bind: TRACE` 로 SQL 의 `?` 에 들어간 값까지 로그에 찍어 테스트 실패 원인을 추적하기 쉽게 한다.
