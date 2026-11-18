@@ -127,7 +127,7 @@
 
 ### 006-2 글 다건조회
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/d1c6dc4525ecaf0650985ed8d760ce5d0257bc28)**
 - **원인** : 006-1 테스트가 실패한다. 글 목록을 응답할 컨트롤러가 없다.
 - **작업**
   - 추가 : `ApiV1PostController.getItems()` — `GET /api/v1/posts`, 응답 `List<PostDto>`
@@ -138,3 +138,14 @@
   - 엔티티를 그대로 응답하면 `comments` 같은 연관관계까지 직렬화하다 지연 로딩·순환 참조 문제가 생기고, 엔티티 구조가 API 에 그대로 드러난다. 응답에 필요한 필드만 담은 `PostDto` 레코드로 바꿔서 돌려준다.
   - `@Transactional(readOnly = true)` 는 조회 전용 트랜잭션이다. 변경 감지를 하지 않아 가볍다.
   - 결과 : `ApiV1PostControllerTest.t1` 통과.
+
+### 007-1 글 단건조회 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 글 하나를 id 로 조회하는 API 가 필요하다. 먼저 `GET /api/v1/posts/{id}` 의 응답을 테스트로 정한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostControllerTest.t2` — `GET /api/v1/posts/1` 을 처리한 메서드(`getItem`), 200, 1번 글의 `id`·`createDate`·`modifyDate`·`title`·`content` 확인
+- **설명**
+  - 샘플 데이터가 항상 먼저 들어가므로 1번 글은 반드시 있다. 기대값은 `postService.findById(1)` 로 읽는다.
+  - 다건조회와 달리 응답이 배열이 아니라 객체 하나이므로 `$.title` 처럼 루트에서 바로 필드를 꺼낸다.
+  - 실패 확인 : 아직 없는 `PostService.findById()` 를 써서 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다.
