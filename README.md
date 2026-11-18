@@ -164,7 +164,7 @@
 
 ### 008-1 없는 글 단건조회 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/90b8f80515bef5dd509e338545930d9e04ebf24c)**
 - **원인** : 없는 글을 조회하면 서버 내부 오류가 난다. 클라이언트에게는 "없다"는 뜻의 404 와 정해진 형식의 본문을 돌려줘야 한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostControllerTest.t3` — `GET /api/v1/posts/{Integer.MAX_VALUE}` 가 404, `resultCode` `"404-1"`, `msg` `"해당 데이터가 존재하지 않습니다."` 로 응답하는지 확인
@@ -172,3 +172,17 @@
   - 절대 만들어질 수 없는 id 로 `Integer.MAX_VALUE` 를 쓴다.
   - 오류 응답도 `resultCode`·`msg` 를 갖는 같은 형식으로 정한다. 이 형식은 다음 단계에서 `RsData` 로 만든다.
   - 실패 확인 : `findById(id).get()` 에서 난 `NoSuchElementException` 을 처리하는 곳이 없어 `ServletException: Request processing failed: java.util.NoSuchElementException: No value present` 로 실패한다.
+
+### 008-2 없는 데이터 404 응답
+
+- **링크**
+- **원인** : 008-1 테스트가 실패한다. 컨트롤러에서 난 `NoSuchElementException` 을 받아 404 응답으로 바꿔 주는 곳이 없다.
+- **작업**
+  - 추가 : `RsData<T>` — 응답 공통 형식 `resultCode`, `msg`, `data` (+ JSON 에서 빠지는 `statusCode`)
+  - 추가 : `GlobalExceptionHandler.handle(NoSuchElementException)` — 404, `RsData("404-1", "해당 데이터가 존재하지 않습니다.")`
+- **설명**
+  - `@ControllerAdvice` 클래스의 `@ExceptionHandler` 는 모든 컨트롤러에서 던져진 해당 예외를 가로챈다. 액션 메서드마다 `try-catch` 를 쓰지 않고 한 곳에서 처리한다.
+  - `ResponseEntity` 로 본문(`RsData`)과 HTTP 상태코드(`NOT_FOUND`)를 함께 정한다. 예외 처리 메서드는 컨트롤러가 아니라서 본문을 JSON 으로 쓰려면 `ResponseEntity` 가 필요하다.
+  - `RsData` 는 `resultCode` 의 `-` 앞 숫자를 `statusCode` 로 계산해 둔다. `@JsonIgnore` 로 JSON 에는 나가지 않는다. `data` 가 없는 응답은 `RsData<Void>` 로 표현한다.
+  - 예외가 나도 `handler()` 는 원래 요청을 맡았던 `getItem` 으로 남으므로, 테스트의 컨트롤러·메서드 검사도 통과한다.
+  - 결과 : `ApiV1PostControllerTest.t3` 통과.
