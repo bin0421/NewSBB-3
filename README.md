@@ -42,7 +42,7 @@
 
 ### 002 JPA·H2 설정
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/036a384012899fefefc2bd0fd14ec386e12ab782)**
 - **원인** : 글과 댓글을 저장할 DB 와 JPA 가 없다. 또 개발용 DB 와 테스트용 DB 를 나눠야 테스트가 개발 데이터를 건드리지 않는다.
 - **작업**
   - 추가 : 의존성 `spring-boot-starter-data-jpa`, `spring-boot-h2console`, `h2`, `spring-boot-starter-data-jpa-test`
@@ -56,3 +56,20 @@
   - `ddl-auto: update` 는 엔티티를 보고 테이블을 만들거나 컬럼을 추가한다. 아직 엔티티가 없으므로 이 단계에서 만들어지는 테이블은 없다.
   - `auto-commit: false` 는 커넥션을 트랜잭션 단위로만 커밋하게 해, `@Transactional` 밖에서 쓰기가 자동으로 확정되지 않게 한다.
   - `org.hibernate.orm.jdbc.bind: TRACE` 로 SQL 의 `?` 에 들어간 값까지 로그에 찍어 테스트 실패 원인을 추적하기 쉽게 한다.
+
+### 003 공통 엔티티와 글 엔티티
+
+- **링크**
+- **원인** : 글을 저장할 테이블과 그 테이블을 다룰 리포지터리가 없다. 앞으로 만들 엔티티마다 id·작성일·수정일을 반복해서 적지 않도록 공통 부모도 필요하다.
+- **작업**
+  - 추가 : `BaseEntity` — `id`, `createDate`, `modifyDate`, id 기준 `equals()`·`hashCode()`
+  - 추가 : `Post` 엔티티 — `title`, `content`, 생성자 `Post(title, content)`
+  - 추가 : `PostRepository` — `JpaRepository<Post, Integer>`
+  - 수정 : `BackApplication`
+    - 이전 : `@SpringBootApplication`
+    - 이후 : `@SpringBootApplication` + `@EnableJpaAuditing`
+- **설명**
+  - `BaseEntity` 는 `@MappedSuperclass` 라 자기 테이블은 없고, 필드만 자식 엔티티 테이블의 컬럼으로 물려준다. `abstract` 로 두어 직접 만들 수 없게 한다.
+  - `@GeneratedValue(strategy = IDENTITY)` 는 id 를 DB 의 자동 증가 컬럼에 맡긴다. 그래서 INSERT 가 실행된 뒤에야 id 를 알 수 있다.
+  - `@CreatedDate`·`@LastModifiedDate` 는 `AuditingEntityListener` 가 저장·수정 직전에 채운다. 이 리스너는 `@EnableJpaAuditing` 이 있어야 동작한다.
+  - `@NoArgsConstructor` 는 JPA 가 조회 결과로 객체를 만들 때 쓰는 기본 생성자다. `ddl-auto: update` 에 의해 앱이 뜰 때 `post` 테이블이 만들어진다.
