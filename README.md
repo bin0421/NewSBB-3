@@ -201,7 +201,7 @@
 
 ### 009-2 글 작성
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/87eb361db01779d6e20c4136ca1986397bba0aca)**
 - **원인** : 009-1 테스트가 실패한다. 글을 작성하는 액션이 없고, `RsData` 의 `resultCode` 에 맞춰 HTTP 상태코드를 201 로 바꿔 줄 방법도 없다.
 - **작업**
   - 추가 : `ApiV1PostController.write()` — `POST /api/v1/posts`, 요청 본문 `PostWriteReqBody(title, content)`, 응답 `RsData<PostDto>`
@@ -214,3 +214,14 @@
   - `findFirstByOrderByIdDesc()` 는 메서드 이름으로 쿼리를 만드는 Spring Data JPA 기능으로, id 내림차순 첫 번째 글을 찾는다.
   - 아직 요청 값 검증은 없다. 빈 제목도 저장되는 문제는 010 에서 테스트로 드러내고 고친다.
   - 결과 : `ApiV1PostControllerTest.t4` 통과.
+
+### 010-1 제목 없는 글 작성 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 지금은 제목이 빈 글도 저장된다. 잘못된 요청은 400 과 무엇이 잘못됐는지 알려 주는 메시지로 거절해야 한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostControllerTest.t5` — 제목이 `""` 인 작성 요청이 400, `resultCode` `"400-1"`, `msg` 에 제목의 `NotBlank`·`Size` 위반 두 줄이 담기는지 확인
+- **설명**
+  - 메시지 형식은 `필드-제약이름-기본메시지` 한 줄씩, 정렬해서 줄바꿈으로 잇는다. 빈 문자열은 "공백이면 안 됨"과 "2~100자" 두 제약을 동시에 어긴다.
+  - 텍스트 블록(`"""`)의 들여쓰기와 끝 줄바꿈은 `stripIndent().trim()` 으로 지워 비교한다.
+  - 실패 확인 : 검증이 없어 그대로 저장되므로 `Status expected:<400> but was:<201>` 로 실패한다.
