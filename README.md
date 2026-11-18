@@ -270,10 +270,21 @@
 
 ### 010-5 잘못된 JSON 글 작성 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/2959a4e2e35e3c1c4a76f718701429d16d2c9768)**
 - **원인** : 문법이 깨진 JSON 을 보내면 스프링 기본 처리로 400 은 나가지만 본문이 비어 있다. 다른 오류와 같은 `RsData` 형식으로 알려 줘야 한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostControllerTest.t7` — 따옴표가 빠진 JSON 으로 작성 요청 시 400, `resultCode` `"400-1"`, `msg` `"요청 본문이 올바르지 않습니다."` 확인
 - **설명**
   - JSON 을 레코드로 바꾸는 단계에서 실패하므로 검증(`@Valid`)까지 가지 못한다. 그래서 010-2 의 처리로는 잡히지 않는다.
   - 실패 확인 : 상태코드는 기본 처리(`DefaultHandlerExceptionResolver`)로 400 이 되지만 본문이 없어 `No value at JSON path "$.resultCode"` 로 실패한다.
+
+### 010-6 잘못된 요청 본문 400 응답
+
+- **링크**
+- **원인** : 010-5 테스트가 실패한다. JSON 을 읽지 못했을 때 나는 예외를 `RsData` 형식으로 바꿔 주는 곳이 없다.
+- **작업**
+  - 추가 : `GlobalExceptionHandler.handle(HttpMessageNotReadableException)` — 400, `RsData("400-1", "요청 본문이 올바르지 않습니다.")`
+- **설명**
+  - 요청 본문을 객체로 바꾸는 `HttpMessageConverter` 가 JSON 을 해석하지 못하면 `HttpMessageNotReadableException` 을 던진다. `@ExceptionHandler` 가 스프링 기본 처리보다 먼저 이 예외를 잡아 본문을 채운다.
+  - 파싱 오류의 상세 내용(줄·열 위치, 내부 클래스 이름)은 클라이언트에게 쓸모가 적고 내부 구조를 드러내므로, 고정된 메시지만 돌려준다.
+  - 결과 : `ApiV1PostControllerTest.t7` 통과. 글 작성의 성공·실패 응답이 모두 `RsData` 형식이 됐다.
