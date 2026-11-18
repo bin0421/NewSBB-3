@@ -248,10 +248,22 @@
 
 ### 010-3 내용 없는 글 작성 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/d55e18687aa23127a0b4509f31c43da0f4e65233)**
 - **원인** : 제목은 검사하지만 내용이 빈 글은 여전히 저장된다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostControllerTest.t6` — 내용이 `""` 인 작성 요청이 400, `resultCode` `"400-1"`, `msg` 에 내용의 `NotBlank`·`Size`(2~5000자) 위반 두 줄이 담기는지 확인
 - **설명**
   - 내용은 제목보다 길 수 있으므로 최대 길이를 5000 자로 정한다.
   - 실패 확인 : 내용에는 제약이 없어 그대로 저장되므로 `Status expected:<400> but was:<201>` 로 실패한다.
+
+### 010-4 내용 검증
+
+- **링크**
+- **원인** : 010-3 테스트가 실패한다. 내용에 검증 제약이 없다.
+- **작업**
+  - 수정 : `PostWriteReqBody.content`
+    - 이전 : 제약 없음
+    - 이후 : `@NotBlank`, `@Size(min = 2, max = 5000)`
+- **설명**
+  - 010-2 에서 만든 `@Valid` 와 `MethodArgumentNotValidException` 처리가 그대로 쓰이므로 제약 애너테이션만 추가하면 된다. 위반 메시지 형식도 제목과 같다.
+  - 결과 : `ApiV1PostControllerTest.t6` 통과.

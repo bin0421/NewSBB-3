@@ -45,6 +45,8 @@ public class ApiV1PostController {
             @NotBlank
             @Size(min = 2, max = 100)
             String title,
+            @NotBlank
+            @Size(min = 2, max = 5000)
             String content
     ) {
     }
