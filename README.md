@@ -291,7 +291,7 @@
 
 ### 011-1 글 수정 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/fdcd6b4de089a0de2fad09b8915895e3b0914870)**
 - **원인** : 작성한 글의 제목·내용을 고치는 API 가 필요하다. 먼저 `PUT /api/v1/posts/{id}` 의 응답과 결과를 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostControllerTest.t8` — 1번 글을 `{"title": "제목 new", "content": "내용 new"}` 로 수정 요청 후 처리한 메서드(`modify`), 200, `resultCode` `"200-1"`, `msg` `"1번 글이 수정되었습니다."` 확인, 다시 조회한 1번 글의 제목·내용이 바뀌었는지 확인
@@ -299,3 +299,16 @@
   - 수정은 기존 자원을 통째로 바꾸므로 `PUT` 을 쓴다. 돌려줄 데이터가 없어 `data` 는 비운다.
   - 참조 테스트는 응답만 검사한다. 응답 메시지만 만들고 실제로 고치지 않는 구현도 통과하지 않도록, 마지막에 글의 제목·내용을 직접 확인하는 검사를 더했다.
   - 실패 확인 : `PUT` 을 받는 매핑이 없어 요청을 맡을 핸들러가 없으므로 `No handler` 로 실패한다. (응답은 405 Method Not Allowed)
+
+### 011-2 글 수정
+
+- **링크**
+- **원인** : 011-1 테스트가 실패한다. `PUT /api/v1/posts/{id}` 를 받는 액션과 글을 고치는 메서드가 없다.
+- **작업**
+  - 추가 : `ApiV1PostController.modify(id, reqBody)` — `PUT /api/v1/posts/{id}`, 요청 본문 `PostModifyReqBody(title, content)`, 응답 `RsData<Void>`
+  - 추가 : `Post.modify(title, content)`, `PostService.modify(post, title, content)`
+- **설명**
+  - 수정 요청 본문도 작성과 같은 제약(`@NotBlank`, `@Size`)을 건다. 요청 레코드를 작성용과 나눠 두어 나중에 한쪽 규칙만 바뀌어도 서로 영향을 주지 않는다.
+  - `save()` 를 다시 부르지 않는다. 트랜잭션 안에서 조회한 엔티티는 영속성 컨텍스트가 관리하므로, 필드만 바꾸면 트랜잭션이 끝날 때 변경 감지(dirty checking)로 UPDATE 가 나간다. 이때 `@LastModifiedDate` 로 `modifyDate` 도 갱신된다.
+  - 없는 id 로 수정을 요청하면 `findById().get()` 에서 `NoSuchElementException` 이 나고 008-2 의 처리로 404 가 된다.
+  - 결과 : `ApiV1PostControllerTest.t8` 통과.
