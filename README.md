@@ -115,7 +115,7 @@
 
 ### 006-1 글 다건조회 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/c7c2b7c7fea247429ad062b57b606e0cec3eb984)**
 - **원인** : 글 목록을 JSON 으로 돌려주는 API 가 필요하다. 먼저 `GET /api/v1/posts` 가 어떻게 응답해야 하는지 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostControllerTest.t1` — `GET /api/v1/posts` 를 처리한 컨트롤러·메서드(`ApiV1PostController.getItems`), 200, 응답 배열 길이, 글마다 `id`·`createDate`·`modifyDate`·`title`·`content` 확인
@@ -124,3 +124,17 @@
   - 기대값은 하드코딩하지 않고 `postService.findAll()` 로 DB 에서 읽어 응답과 하나씩 대조한다.
   - 날짜는 DB 저장 시 나노초 자릿수가 달라질 수 있어 앞 20자리(`yyyy-MM-ddTHH:mm:ss.`)만 `startsWith` 로 비교한다.
   - 실패 확인 : 아직 없는 `ApiV1PostController` 와 `PostService.findAll()` 을 쓰므로 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다. TDD 에서는 컴파일 실패도 "실패"로 본다.
+
+### 006-2 글 다건조회
+
+- **링크**
+- **원인** : 006-1 테스트가 실패한다. 글 목록을 응답할 컨트롤러가 없다.
+- **작업**
+  - 추가 : `ApiV1PostController.getItems()` — `GET /api/v1/posts`, 응답 `List<PostDto>`
+  - 추가 : `PostDto` — `id`, `createDate`, `modifyDate`, `title`, `content`
+  - 추가 : `PostService.findAll()`
+- **설명**
+  - `@RestController` 는 메서드가 돌려준 객체를 Jackson 으로 JSON 으로 바꿔 응답 본문에 쓴다. 클래스의 `@RequestMapping("/api/v1/posts")` 가 이 컨트롤러 모든 주소의 앞부분이 된다.
+  - 엔티티를 그대로 응답하면 `comments` 같은 연관관계까지 직렬화하다 지연 로딩·순환 참조 문제가 생기고, 엔티티 구조가 API 에 그대로 드러난다. 응답에 필요한 필드만 담은 `PostDto` 레코드로 바꿔서 돌려준다.
+  - `@Transactional(readOnly = true)` 는 조회 전용 트랜잭션이다. 변경 감지를 하지 않아 가볍다.
+  - 결과 : `ApiV1PostControllerTest.t1` 통과.
