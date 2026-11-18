@@ -101,7 +101,7 @@
 
 ### 005-2 샘플 글 3건·댓글 5건 생성
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/4cdf391205f06ef3f450fb9d59891e3e03c97219)**
 - **원인** : 005-1 테스트가 실패한다. 앱이 뜰 때 샘플 데이터를 넣는 코드가 없다.
 - **작업**
   - 추가 : `PostService.count()`, `PostService.write(title, content)`
@@ -112,3 +112,15 @@
   - 글은 `save()` 로 바로 영속 상태가 되고, 댓글은 `addComment()` 로 리스트에 넣기만 한다. 트랜잭션이 끝날 때 `cascade = PERSIST` 에 의해 댓글이 INSERT 된다.
   - 글이 이미 있으면(`count() > 0`) 건너뛰어, 파일 DB 를 쓰는 개발 환경에서 재시작해도 데이터가 중복되지 않는다.
   - 결과 : `BaseInitDataTest.t1` 통과.
+
+### 006-1 글 다건조회 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 글 목록을 JSON 으로 돌려주는 API 가 필요하다. 먼저 `GET /api/v1/posts` 가 어떻게 응답해야 하는지 테스트로 정한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostControllerTest.t1` — `GET /api/v1/posts` 를 처리한 컨트롤러·메서드(`ApiV1PostController.getItems`), 200, 응답 배열 길이, 글마다 `id`·`createDate`·`modifyDate`·`title`·`content` 확인
+- **설명**
+  - `@AutoConfigureMockMvc` 의 `MockMvc` 는 서버를 띄우지 않고 스프링 MVC 에 가짜 요청을 보낸다. `perform()` 으로 요청하고 `andExpect()` 로 응답을 검사한다.
+  - 기대값은 하드코딩하지 않고 `postService.findAll()` 로 DB 에서 읽어 응답과 하나씩 대조한다.
+  - 날짜는 DB 저장 시 나노초 자릿수가 달라질 수 있어 앞 20자리(`yyyy-MM-ddTHH:mm:ss.`)만 `startsWith` 로 비교한다.
+  - 실패 확인 : 아직 없는 `ApiV1PostController` 와 `PostService.findAll()` 을 쓰므로 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다. TDD 에서는 컴파일 실패도 "실패"로 본다.
