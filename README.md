@@ -386,7 +386,7 @@
 
 ### 014-2 댓글 단건조회
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/4e50168b720d4986ca255bc236ffffa9ba57183e)**
 - **원인** : 014-1 테스트가 실패한다. 글 안에서 id 로 댓글을 찾는 메서드와 단건조회 액션이 없다.
 - **작업**
   - 추가 : `ApiV1PostCommentController.getItem(postId, id)` — `GET /api/v1/posts/{postId}/comments/{id}`, 응답 `PostCommentDto`
@@ -396,3 +396,14 @@
   - 글의 댓글 리스트 안에서만 찾으므로, 다른 글의 댓글 번호를 주소에 넣으면 찾지 못한다. 주소의 글과 댓글이 실제로 연결돼 있는지 따로 검사하지 않아도 된다.
   - 글이나 댓글이 없으면 `.get()` 에서 `NoSuchElementException` 이 나고 008-2 의 처리로 404 가 된다.
   - 결과 : `ApiV1PostCommentControllerTest.t2` 통과.
+
+### 015-1 댓글 작성 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 글에 댓글을 다는 `POST /api/v1/posts/{postId}/comments` 가 필요하다. 먼저 요청 본문과 응답을 테스트로 정한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostCommentControllerTest.t3` — `{"content": "내용"}` 으로 1번 글에 댓글 작성 요청 후 처리한 메서드(`write`), 201, `resultCode` `"201-1"`, `msg` `"%d번 댓글이 작성되었습니다."`, `data` 의 `id`·날짜·`content` 확인, 새 댓글의 id 가 양수인지 확인
+- **설명**
+  - 새 댓글은 1번 글의 댓글 리스트 마지막(`getLast()`)에 있다. 응답의 id·메시지를 그 댓글과 대조한다.
+  - 참조 테스트에는 없는 `id` 양수 검사를 더했다. 새 댓글이 아직 DB 에 INSERT 되지 않았으면 id 가 0 인 채로 응답과 기대값이 둘 다 0 이 되어 검사를 통과해 버리기 때문이다.
+  - 실패 확인 : 댓글 주소에 `POST` 를 받는 매핑이 없어 `No handler` 로 실패한다.
