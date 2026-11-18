@@ -302,7 +302,7 @@
 
 ### 011-2 글 수정
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/e19b3f579062a12d86f46596b68da1f5c2dafcb6)**
 - **원인** : 011-1 테스트가 실패한다. `PUT /api/v1/posts/{id}` 를 받는 액션과 글을 고치는 메서드가 없다.
 - **작업**
   - 추가 : `ApiV1PostController.modify(id, reqBody)` — `PUT /api/v1/posts/{id}`, 요청 본문 `PostModifyReqBody(title, content)`, 응답 `RsData<Void>`
@@ -312,3 +312,14 @@
   - `save()` 를 다시 부르지 않는다. 트랜잭션 안에서 조회한 엔티티는 영속성 컨텍스트가 관리하므로, 필드만 바꾸면 트랜잭션이 끝날 때 변경 감지(dirty checking)로 UPDATE 가 나간다. 이때 `@LastModifiedDate` 로 `modifyDate` 도 갱신된다.
   - 없는 id 로 수정을 요청하면 `findById().get()` 에서 `NoSuchElementException` 이 나고 008-2 의 처리로 404 가 된다.
   - 결과 : `ApiV1PostControllerTest.t8` 통과.
+
+### 012-1 글 삭제 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 글을 지우는 API 가 필요하다. 먼저 `DELETE /api/v1/posts/{id}` 의 응답과 결과를 테스트로 정한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostControllerTest.t9` — 1번 글 삭제 요청 후 처리한 메서드(`delete`), 200, `resultCode` `"200-1"`, `msg` `"1번 글이 삭제되었습니다."` 확인, 전체 글 수가 2건인지 확인
+- **설명**
+  - 1번 글에는 샘플 댓글 3건이 달려 있다. 댓글이 있는 글을 지우는 경우를 일부러 고른 것이다.
+  - 참조 테스트는 응답만 검사한다. 여기서는 마지막에 `postService.count()` 를 더했다. JPQL 조회 전에 JPA 가 쌓아 둔 DELETE 를 먼저 DB 로 보내므로(자동 flush), 삭제가 DB 제약 조건까지 통과하는지 테스트 안에서 드러난다.
+  - 실패 확인 : `DELETE` 를 받는 매핑이 없어 `No handler` 로 실패한다.
