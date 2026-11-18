@@ -59,7 +59,7 @@
 
 ### 003 공통 엔티티와 글 엔티티
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/abd9722b871f364bc7b2134a108aec417e4c7f58)**
 - **원인** : 글을 저장할 테이블과 그 테이블을 다룰 리포지터리가 없다. 앞으로 만들 엔티티마다 id·작성일·수정일을 반복해서 적지 않도록 공통 부모도 필요하다.
 - **작업**
   - 추가 : `BaseEntity` — `id`, `createDate`, `modifyDate`, id 기준 `equals()`·`hashCode()`
@@ -73,3 +73,17 @@
   - `@GeneratedValue(strategy = IDENTITY)` 는 id 를 DB 의 자동 증가 컬럼에 맡긴다. 그래서 INSERT 가 실행된 뒤에야 id 를 알 수 있다.
   - `@CreatedDate`·`@LastModifiedDate` 는 `AuditingEntityListener` 가 저장·수정 직전에 채운다. 이 리스너는 `@EnableJpaAuditing` 이 있어야 동작한다.
   - `@NoArgsConstructor` 는 JPA 가 조회 결과로 객체를 만들 때 쓰는 기본 생성자다. `ddl-auto: update` 에 의해 앱이 뜰 때 `post` 테이블이 만들어진다.
+
+### 004 댓글 엔티티와 글-댓글 연관관계
+
+- **링크**
+- **원인** : 댓글을 저장할 곳이 없고, 어떤 글의 댓글인지 연결할 방법도 없다.
+- **작업**
+  - 추가 : `PostComment` 엔티티 — `post`(`@ManyToOne`), `content`, 생성자 `PostComment(post, content)`
+  - 추가 : `Post.comments` — `@OneToMany(mappedBy = "post", cascade = {PERSIST})`
+  - 추가 : `Post.addComment(content)` — 댓글을 만들어 글의 댓글 리스트에 넣고 돌려준다
+- **설명**
+  - 외래키 `post_id` 는 `post_comment` 테이블에 생기고, 관계의 주인은 `PostComment.post` 다. `Post.comments` 는 `mappedBy` 로 그 관계를 거꾸로 읽기만 하는 쪽이라 컬럼을 만들지 않는다.
+  - `fetch = LAZY` 는 댓글을 읽을 때 글을 바로 조회하지 않고, 실제로 글에 접근할 때 조회한다.
+  - 댓글을 별도 리포지터리로 저장하지 않고 `addComment()` 로 글의 리스트에 넣는다. `cascade = PERSIST` 이므로 글이 영속 상태면 리스트에 들어간 새 댓글도 함께 저장(INSERT)된다.
+  - 이 단계는 구조만 만든다. 연관관계가 실제로 동작하는지는 다음 단계의 샘플 데이터 테스트로 확인한다.
