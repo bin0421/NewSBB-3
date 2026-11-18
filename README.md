@@ -217,7 +217,7 @@
 
 ### 010-1 제목 없는 글 작성 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/4e572b10505d1a89bce70d99f8df05047ea90938)**
 - **원인** : 지금은 제목이 빈 글도 저장된다. 잘못된 요청은 400 과 무엇이 잘못됐는지 알려 주는 메시지로 거절해야 한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostControllerTest.t5` — 제목이 `""` 인 작성 요청이 400, `resultCode` `"400-1"`, `msg` 에 제목의 `NotBlank`·`Size` 위반 두 줄이 담기는지 확인
@@ -225,3 +225,23 @@
   - 메시지 형식은 `필드-제약이름-기본메시지` 한 줄씩, 정렬해서 줄바꿈으로 잇는다. 빈 문자열은 "공백이면 안 됨"과 "2~100자" 두 제약을 동시에 어긴다.
   - 텍스트 블록(`"""`)의 들여쓰기와 끝 줄바꿈은 `stripIndent().trim()` 으로 지워 비교한다.
   - 실패 확인 : 검증이 없어 그대로 저장되므로 `Status expected:<400> but was:<201>` 로 실패한다.
+
+### 010-2 제목 검증
+
+- **링크**
+- **원인** : 010-1 테스트가 실패한다. 요청 본문의 제목을 검사하지 않고, 검사에 실패했을 때 400 으로 응답하는 곳도 없다.
+- **작업**
+  - 추가 : 의존성 `spring-boot-starter-validation`, `spring-boot-starter-validation-test`
+  - 추가 : `GlobalExceptionHandler.handle(MethodArgumentNotValidException)` — 400, `RsData("400-1", 위반 목록)`
+  - 수정 : `PostWriteReqBody.title`
+    - 이전 : 제약 없음
+    - 이후 : `@NotBlank`, `@Size(min = 2, max = 100)`
+  - 수정 : `ApiV1PostController.write()` 의 요청 본문
+    - 이전 : `@RequestBody PostWriteReqBody reqBody`
+    - 이후 : `@RequestBody @Valid PostWriteReqBody reqBody`
+- **설명**
+  - `@Valid` 가 붙은 파라미터는 JSON 을 레코드로 바꾼 직후 Bean Validation 으로 검사된다. 위반이 있으면 액션 메서드를 실행하지 않고 `MethodArgumentNotValidException` 을 던진다.
+  - 예외의 `BindingResult` 에서 필드 오류마다 `필드-제약이름-기본메시지` 를 만들고, 순서가 매번 같도록 정렬해 줄바꿈으로 잇는다.
+  - 기본 메시지는 요청 로케일을 따른다. MockMvc 요청의 기본 로케일이 영어라 `must not be blank` 같은 영어 메시지가 나온다.
+  - 내용(`content`)에는 아직 제약을 걸지 않았다. 010-3 에서 테스트로 먼저 드러낸다.
+  - 결과 : `ApiV1PostControllerTest.t5` 통과.
