@@ -152,7 +152,7 @@
 
 ### 007-2 글 단건조회
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/56be133589669291cdb096b550ba3ab916c7b5ee)**
 - **원인** : 007-1 테스트가 실패한다. id 로 글을 찾는 서비스 메서드와 단건조회 액션이 없다.
 - **작업**
   - 추가 : `ApiV1PostController.getItem(id)` — `GET /api/v1/posts/{id}`, 응답 `PostDto`
@@ -161,3 +161,14 @@
   - `@GetMapping("/{id}")` 의 `{id}` 자리 값을 `@PathVariable int id` 가 받아 정수로 바꾼다.
   - `findById()` 는 글이 없을 수도 있음을 `Optional` 로 드러낸다. 지금은 `.get()` 으로 바로 꺼내므로, 없는 id 를 요청하면 `NoSuchElementException` 이 난다. 이 문제는 008 에서 테스트로 드러내고 고친다.
   - 결과 : `ApiV1PostControllerTest.t2` 통과.
+
+### 008-1 없는 글 단건조회 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 없는 글을 조회하면 서버 내부 오류가 난다. 클라이언트에게는 "없다"는 뜻의 404 와 정해진 형식의 본문을 돌려줘야 한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostControllerTest.t3` — `GET /api/v1/posts/{Integer.MAX_VALUE}` 가 404, `resultCode` `"404-1"`, `msg` `"해당 데이터가 존재하지 않습니다."` 로 응답하는지 확인
+- **설명**
+  - 절대 만들어질 수 없는 id 로 `Integer.MAX_VALUE` 를 쓴다.
+  - 오류 응답도 `resultCode`·`msg` 를 갖는 같은 형식으로 정한다. 이 형식은 다음 단계에서 `RsData` 로 만든다.
+  - 실패 확인 : `findById(id).get()` 에서 난 `NoSuchElementException` 을 처리하는 곳이 없어 `ServletException: Request processing failed: java.util.NoSuchElementException: No value present` 로 실패한다.
