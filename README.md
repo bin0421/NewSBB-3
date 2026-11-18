@@ -351,7 +351,7 @@
 
 ### 013-1 댓글 다건조회 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/a64803838f82353629edb8c2f70818167d64834b)**
 - **원인** : 이제 댓글 API 가 필요하다. 첫 번째로 한 글의 댓글 목록을 주는 `GET /api/v1/posts/{postId}/comments` 의 응답을 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostCommentControllerTest.t1` — 1번 글의 댓글 목록 요청을 처리한 컨트롤러·메서드(`ApiV1PostCommentController.getItems`), 200, 배열 길이, 댓글마다 `id`·`createDate`·`modifyDate`·`content` 확인
@@ -359,3 +359,17 @@
   - 댓글은 글에 딸린 자원이므로 주소에 글 id 를 넣는다. 기대값도 `post.getComments()` 로 글을 통해 읽는다.
   - 테스트 클래스 설정(`test` 프로필, MockMvc, `@Transactional`)은 글 테스트와 같다.
   - 실패 확인 : 아직 없는 `ApiV1PostCommentController` 를 써서 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다.
+
+### 013-2 댓글 다건조회
+
+- **링크**
+- **원인** : 013-1 테스트가 실패한다. 댓글 API 를 맡을 컨트롤러가 없다.
+- **작업**
+  - 추가 : `ApiV1PostCommentController.getItems(postId)` — `GET /api/v1/posts/{postId}/comments`, 응답 `List<PostCommentDto>`
+  - 추가 : `PostCommentDto` — `id`, `createDate`, `modifyDate`, `content`
+- **설명**
+  - 클래스 레벨 `@RequestMapping("/api/v1/posts/{postId}/comments")` 의 `{postId}` 도 메서드 파라미터의 `@PathVariable` 로 받을 수 있다.
+  - 댓글 전용 리포지터리·서비스 없이 `PostService` 로 글을 찾고 `post.getComments()` 로 댓글을 꺼낸다. 댓글은 항상 글을 통해 다룬다는 참조의 설계를 따른다.
+  - `comments` 는 지연 로딩이라 `@Transactional(readOnly = true)` 안에서 읽어야 한다. 트랜잭션 밖에서 읽으면 `LazyInitializationException` 이 난다.
+  - `PostCommentDto` 에는 `post` 를 넣지 않는다. 댓글이 글을, 글이 다시 댓글을 직렬화하는 순환을 막는다.
+  - 결과 : `ApiV1PostCommentControllerTest.t1` 통과.
