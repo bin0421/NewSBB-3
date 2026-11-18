@@ -280,7 +280,7 @@
 
 ### 010-6 잘못된 요청 본문 400 응답
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/1fa2f865c3ed2204791a63e29585a76d3b545750)**
 - **원인** : 010-5 테스트가 실패한다. JSON 을 읽지 못했을 때 나는 예외를 `RsData` 형식으로 바꿔 주는 곳이 없다.
 - **작업**
   - 추가 : `GlobalExceptionHandler.handle(HttpMessageNotReadableException)` — 400, `RsData("400-1", "요청 본문이 올바르지 않습니다.")`
@@ -288,3 +288,14 @@
   - 요청 본문을 객체로 바꾸는 `HttpMessageConverter` 가 JSON 을 해석하지 못하면 `HttpMessageNotReadableException` 을 던진다. `@ExceptionHandler` 가 스프링 기본 처리보다 먼저 이 예외를 잡아 본문을 채운다.
   - 파싱 오류의 상세 내용(줄·열 위치, 내부 클래스 이름)은 클라이언트에게 쓸모가 적고 내부 구조를 드러내므로, 고정된 메시지만 돌려준다.
   - 결과 : `ApiV1PostControllerTest.t7` 통과. 글 작성의 성공·실패 응답이 모두 `RsData` 형식이 됐다.
+
+### 011-1 글 수정 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 작성한 글의 제목·내용을 고치는 API 가 필요하다. 먼저 `PUT /api/v1/posts/{id}` 의 응답과 결과를 테스트로 정한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostControllerTest.t8` — 1번 글을 `{"title": "제목 new", "content": "내용 new"}` 로 수정 요청 후 처리한 메서드(`modify`), 200, `resultCode` `"200-1"`, `msg` `"1번 글이 수정되었습니다."` 확인, 다시 조회한 1번 글의 제목·내용이 바뀌었는지 확인
+- **설명**
+  - 수정은 기존 자원을 통째로 바꾸므로 `PUT` 을 쓴다. 돌려줄 데이터가 없어 `data` 는 비운다.
+  - 참조 테스트는 응답만 검사한다. 응답 메시지만 만들고 실제로 고치지 않는 구현도 통과하지 않도록, 마지막에 글의 제목·내용을 직접 확인하는 검사를 더했다.
+  - 실패 확인 : `PUT` 을 받는 매핑이 없어 요청을 맡을 핸들러가 없으므로 `No handler` 로 실패한다. (응답은 405 Method Not Allowed)
