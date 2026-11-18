@@ -410,7 +410,7 @@
 
 ### 015-2 댓글 작성 (저장 전 응답 실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/80441126778402ec5a42148bdd60b50ba0f175b5)**
 - **원인** : 015-1 테스트가 실패한다. 댓글 주소에 `POST` 를 받는 액션이 없다.
 - **작업**
   - 추가 : `ApiV1PostCommentController.write(postId, reqBody)` — `POST /api/v1/posts/{postId}/comments`, 요청 본문 `PostCommentWriteReqBody(content)`, 응답 `RsData<PostCommentDto>`
@@ -419,3 +419,18 @@
   - 요청 본문의 `content` 에 `@NotBlank`, `@Size(min = 2, max = 100)` 를 걸고 `@Valid` 로 검사한다. 저장은 004·005 와 같이 `Post.addComment()` 로 글의 리스트에 넣고 `cascade = PERSIST` 에 맡긴다.
   - 문제 : 리스트에 넣는 것만으로는 INSERT 가 나가지 않는다. INSERT 는 트랜잭션이 끝날 때(flush) 나가는데, 응답은 그보다 먼저 만들어진다. 그래서 응답을 만드는 시점의 새 댓글은 `id` 가 0 이고, `@CreatedDate` 를 채우는 감사 리스너도 아직 돌지 않아 날짜가 `null` 이다.
   - 실패 확인 : 응답 메시지는 `"0번 댓글이 작성되었습니다."` 가 되고, 테스트는 날짜를 비교하는 줄에서 `NullPointerException: ... PostComment.getCreateDate() is null` 로 실패한다.
+
+### 015-3 댓글 작성 직후 flush
+
+- **링크**
+- **원인** : 015-2 에서 응답을 만들 때 새 댓글이 아직 INSERT 되지 않아 id 가 0, 작성일이 `null` 이다.
+- **작업**
+  - 추가 : `PostService.flush()`
+  - 수정 : `ApiV1PostCommentController.write()`
+    - 이전 : `writeComment()` 직후 바로 응답 생성
+    - 이후 : `writeComment()` → `postService.flush()` → 응답 생성
+- **설명**
+  - `flush()` 는 영속성 컨텍스트에 쌓인 변경(새 댓글 INSERT)을 지금 DB 로 보낸다. INSERT 직전에 감사 리스너가 날짜를 채우고, INSERT 직후 `IDENTITY` 로 생성된 id 가 엔티티에 들어간다.
+  - flush 는 커밋이 아니다. 이후 오류가 나면 트랜잭션과 함께 롤백된다.
+  - 글 작성(009-2)은 `save()` 가 바로 INSERT 하므로 이 문제가 없었다. 댓글은 cascade 로 저장되기 때문에 생긴 차이다.
+  - 결과 : `ApiV1PostCommentControllerTest.t3` 통과.
