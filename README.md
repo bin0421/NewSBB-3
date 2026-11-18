@@ -338,7 +338,7 @@
 
 ### 012-3 글 삭제 시 댓글 함께 삭제
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/930aa0aa806337a98427cbf2ee14067ef03e4a6a)**
 - **원인** : 012-2 에서 댓글이 달린 글을 지우면 외래키 제약 위반으로 실패한다.
 - **작업**
   - 수정 : `Post.comments` 의 cascade
@@ -348,3 +348,14 @@
   - `CascadeType.REMOVE` 는 부모 엔티티를 `remove` 할 때 `comments` 리스트의 자식들에게도 `remove` 를 전파한다. JPA 는 자식(댓글) DELETE 를 먼저, 부모(글) DELETE 를 나중에 보내므로 외래키 제약을 어기지 않는다.
   - 댓글 수만큼 DELETE 가 나가지만, 이 저장소의 댓글 규모에서는 문제가 되지 않는다.
   - 결과 : `ApiV1PostControllerTest.t9` 통과. 글 CRUD(다건조회·단건조회·작성·수정·삭제)가 모두 테스트로 확인됐다.
+
+### 013-1 댓글 다건조회 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 이제 댓글 API 가 필요하다. 첫 번째로 한 글의 댓글 목록을 주는 `GET /api/v1/posts/{postId}/comments` 의 응답을 테스트로 정한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostCommentControllerTest.t1` — 1번 글의 댓글 목록 요청을 처리한 컨트롤러·메서드(`ApiV1PostCommentController.getItems`), 200, 배열 길이, 댓글마다 `id`·`createDate`·`modifyDate`·`content` 확인
+- **설명**
+  - 댓글은 글에 딸린 자원이므로 주소에 글 id 를 넣는다. 기대값도 `post.getComments()` 로 글을 통해 읽는다.
+  - 테스트 클래스 설정(`test` 프로필, MockMvc, `@Transactional`)은 글 테스트와 같다.
+  - 실패 확인 : 아직 없는 `ApiV1PostCommentController` 를 써서 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다.
