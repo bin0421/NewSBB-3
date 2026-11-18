@@ -422,7 +422,7 @@
 
 ### 015-3 댓글 작성 직후 flush
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/a2944de71fc3513d3295beb3c6a24a3864ae1b2f)**
 - **원인** : 015-2 에서 응답을 만들 때 새 댓글이 아직 INSERT 되지 않아 id 가 0, 작성일이 `null` 이다.
 - **작업**
   - 추가 : `PostService.flush()`
@@ -434,3 +434,13 @@
   - flush 는 커밋이 아니다. 이후 오류가 나면 트랜잭션과 함께 롤백된다.
   - 글 작성(009-2)은 `save()` 가 바로 INSERT 하므로 이 문제가 없었다. 댓글은 cascade 로 저장되기 때문에 생긴 차이다.
   - 결과 : `ApiV1PostCommentControllerTest.t3` 통과.
+
+### 016-1 댓글 수정 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 댓글 내용을 고치는 `PUT /api/v1/posts/{postId}/comments/{id}` 가 필요하다. 먼저 응답과 결과를 테스트로 정한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostCommentControllerTest.t4` — 1번 글의 1번 댓글을 `{"content": "내용 new"}` 로 수정 요청 후 처리한 메서드(`modify`), 200, `resultCode` `"200-1"`, `msg` `"1번 댓글이 수정되었습니다."` 확인, 다시 찾은 댓글의 내용이 바뀌었는지 확인
+- **설명**
+  - 글 수정 테스트(011-1)와 같은 이유로, 참조 테스트에 없는 내용 변경 확인 검사를 더했다.
+  - 실패 확인 : 댓글 단건 주소에 `PUT` 을 받는 매핑이 없어 `No handler` 로 실패한다.
