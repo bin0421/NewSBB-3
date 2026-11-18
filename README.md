@@ -315,7 +315,7 @@
 
 ### 012-1 글 삭제 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/0bb38186e9ee6f6b39fa34245f8dc4edc9b6e95a)**
 - **원인** : 글을 지우는 API 가 필요하다. 먼저 `DELETE /api/v1/posts/{id}` 의 응답과 결과를 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostControllerTest.t9` — 1번 글 삭제 요청 후 처리한 메서드(`delete`), 200, `resultCode` `"200-1"`, `msg` `"1번 글이 삭제되었습니다."` 확인, 전체 글 수가 2건인지 확인
@@ -323,3 +323,15 @@
   - 1번 글에는 샘플 댓글 3건이 달려 있다. 댓글이 있는 글을 지우는 경우를 일부러 고른 것이다.
   - 참조 테스트는 응답만 검사한다. 여기서는 마지막에 `postService.count()` 를 더했다. JPQL 조회 전에 JPA 가 쌓아 둔 DELETE 를 먼저 DB 로 보내므로(자동 flush), 삭제가 DB 제약 조건까지 통과하는지 테스트 안에서 드러난다.
   - 실패 확인 : `DELETE` 를 받는 매핑이 없어 `No handler` 로 실패한다.
+
+### 012-2 글 삭제 (외래키 위반 실패)
+
+- **링크**
+- **원인** : 012-1 테스트가 실패한다. `DELETE /api/v1/posts/{id}` 를 받는 액션이 없다.
+- **작업**
+  - 추가 : `ApiV1PostController.delete(id)` — `DELETE /api/v1/posts/{id}`, 응답 `RsData<Void>`
+  - 추가 : `PostService.delete(post)`
+- **설명**
+  - 삭제는 조회와 같은 주소에 HTTP 메서드만 `DELETE` 로 바꿔 표현한다. `"200-1"` 이므로 `ResponseAspect` 가 200 으로 응답한다.
+  - 액션 응답까지는 기대대로 나온다. 하지만 `post_comment.post_id` 가 1번 글을 가리키는 댓글 3건이 남아 있어, 글만 지우는 DELETE 는 외래키 제약을 어긴다.
+  - 실패 확인 : 테스트의 `count()` 가 DELETE 를 DB 로 보내는 순간 `DataIntegrityViolationException: Referential integrity constraint violation ... POST_COMMENT FOREIGN KEY(POST_ID) REFERENCES PUBLIC.POST(ID)` 로 실패한다. 실제 서버였다면 트랜잭션 커밋 때 같은 오류로 500 이 났을 문제를 테스트가 미리 잡은 것이다.
