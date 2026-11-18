@@ -175,7 +175,7 @@
 
 ### 008-2 없는 데이터 404 응답
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/903f103fbaa36db7964786663495cbfbf7d19d93)**
 - **원인** : 008-1 테스트가 실패한다. 컨트롤러에서 난 `NoSuchElementException` 을 받아 404 응답으로 바꿔 주는 곳이 없다.
 - **작업**
   - 추가 : `RsData<T>` — 응답 공통 형식 `resultCode`, `msg`, `data` (+ JSON 에서 빠지는 `statusCode`)
@@ -186,3 +186,15 @@
   - `RsData` 는 `resultCode` 의 `-` 앞 숫자를 `statusCode` 로 계산해 둔다. `@JsonIgnore` 로 JSON 에는 나가지 않는다. `data` 가 없는 응답은 `RsData<Void>` 로 표현한다.
   - 예외가 나도 `handler()` 는 원래 요청을 맡았던 `getItem` 으로 남으므로, 테스트의 컨트롤러·메서드 검사도 통과한다.
   - 결과 : `ApiV1PostControllerTest.t3` 통과.
+
+### 009-1 글 작성 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 글을 새로 작성하는 API 가 필요하다. 먼저 `POST /api/v1/posts` 의 요청 본문과 응답을 테스트로 정한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostControllerTest.t4` — JSON 본문 `{"title", "content"}` 로 `POST /api/v1/posts` 요청 후 처리한 메서드(`write`), 201, `resultCode` `"201-1"`, `msg` `"%d번 글이 작성되었습니다."`, `data` 에 담긴 새 글의 `id`·날짜·`title`·`content` 확인
+- **설명**
+  - 생성 요청의 성공은 200 이 아니라 201(Created)로 정한다. 응답은 `RsData` 형식으로 감싸고 작성된 글을 `data` 에 담는다.
+  - 새 글의 id 는 미리 알 수 없으므로, 요청 뒤 가장 최근 글(`findLatest()`)을 DB 에서 꺼내 응답의 id·메시지와 대조한다.
+  - `@Transactional` 테스트라 끝나면 작성한 글이 롤백되어 다른 테스트에 영향을 주지 않는다.
+  - 실패 확인 : 아직 없는 `PostService.findLatest()` 를 써서 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다.
