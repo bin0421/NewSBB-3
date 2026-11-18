@@ -362,7 +362,7 @@
 
 ### 013-2 댓글 다건조회
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/361258854a48769b193299c61985ba9d5d622a1a)**
 - **원인** : 013-1 테스트가 실패한다. 댓글 API 를 맡을 컨트롤러가 없다.
 - **작업**
   - 추가 : `ApiV1PostCommentController.getItems(postId)` — `GET /api/v1/posts/{postId}/comments`, 응답 `List<PostCommentDto>`
@@ -373,3 +373,13 @@
   - `comments` 는 지연 로딩이라 `@Transactional(readOnly = true)` 안에서 읽어야 한다. 트랜잭션 밖에서 읽으면 `LazyInitializationException` 이 난다.
   - `PostCommentDto` 에는 `post` 를 넣지 않는다. 댓글이 글을, 글이 다시 댓글을 직렬화하는 순환을 막는다.
   - 결과 : `ApiV1PostCommentControllerTest.t1` 통과.
+
+### 014-1 댓글 단건조회 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 댓글 하나를 조회하는 `GET /api/v1/posts/{postId}/comments/{id}` 가 필요하다. 먼저 응답을 테스트로 정한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostCommentControllerTest.t2` — 1번 글의 1번 댓글 요청을 처리한 메서드(`getItem`), 200, 댓글의 `id`·`createDate`·`modifyDate`·`content` 확인
+- **설명**
+  - 기대값은 글의 댓글 리스트에서 id 로 찾는 `post.findCommentById(id)` 로 읽는다. 댓글을 글을 통해서 찾는다는 규칙을 테스트에서부터 쓴다.
+  - 실패 확인 : 아직 없는 `Post.findCommentById()` 를 써서 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다.
