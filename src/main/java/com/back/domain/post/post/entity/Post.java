@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static jakarta.persistence.CascadeType.PERSIST;
+import static jakarta.persistence.CascadeType.REMOVE;
 
 @Entity
 @Getter
@@ -19,7 +20,7 @@ public class Post extends BaseEntity {
     private String title;
     private String content;
 
-    @OneToMany(mappedBy = "post", cascade = {PERSIST})
+    @OneToMany(mappedBy = "post", cascade = {PERSIST, REMOVE})
     private final List<PostComment> comments = new ArrayList<>();
 
     public Post(String title, String content) {

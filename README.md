@@ -326,7 +326,7 @@
 
 ### 012-2 글 삭제 (외래키 위반 실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/4033549905a1fb1c157f29b0d789101de1311ca1)**
 - **원인** : 012-1 테스트가 실패한다. `DELETE /api/v1/posts/{id}` 를 받는 액션이 없다.
 - **작업**
   - 추가 : `ApiV1PostController.delete(id)` — `DELETE /api/v1/posts/{id}`, 응답 `RsData<Void>`
@@ -335,3 +335,16 @@
   - 삭제는 조회와 같은 주소에 HTTP 메서드만 `DELETE` 로 바꿔 표현한다. `"200-1"` 이므로 `ResponseAspect` 가 200 으로 응답한다.
   - 액션 응답까지는 기대대로 나온다. 하지만 `post_comment.post_id` 가 1번 글을 가리키는 댓글 3건이 남아 있어, 글만 지우는 DELETE 는 외래키 제약을 어긴다.
   - 실패 확인 : 테스트의 `count()` 가 DELETE 를 DB 로 보내는 순간 `DataIntegrityViolationException: Referential integrity constraint violation ... POST_COMMENT FOREIGN KEY(POST_ID) REFERENCES PUBLIC.POST(ID)` 로 실패한다. 실제 서버였다면 트랜잭션 커밋 때 같은 오류로 500 이 났을 문제를 테스트가 미리 잡은 것이다.
+
+### 012-3 글 삭제 시 댓글 함께 삭제
+
+- **링크**
+- **원인** : 012-2 에서 댓글이 달린 글을 지우면 외래키 제약 위반으로 실패한다.
+- **작업**
+  - 수정 : `Post.comments` 의 cascade
+    - 이전 : `cascade = {PERSIST}`
+    - 이후 : `cascade = {PERSIST, REMOVE}`
+- **설명**
+  - `CascadeType.REMOVE` 는 부모 엔티티를 `remove` 할 때 `comments` 리스트의 자식들에게도 `remove` 를 전파한다. JPA 는 자식(댓글) DELETE 를 먼저, 부모(글) DELETE 를 나중에 보내므로 외래키 제약을 어기지 않는다.
+  - 댓글 수만큼 DELETE 가 나가지만, 이 저장소의 댓글 규모에서는 문제가 되지 않는다.
+  - 결과 : `ApiV1PostControllerTest.t9` 통과. 글 CRUD(다건조회·단건조회·작성·수정·삭제)가 모두 테스트로 확인됐다.
