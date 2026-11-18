@@ -376,10 +376,23 @@
 
 ### 014-1 댓글 단건조회 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/a3a48180288709b93b97e5271e5b186ab1a2147c)**
 - **원인** : 댓글 하나를 조회하는 `GET /api/v1/posts/{postId}/comments/{id}` 가 필요하다. 먼저 응답을 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostCommentControllerTest.t2` — 1번 글의 1번 댓글 요청을 처리한 메서드(`getItem`), 200, 댓글의 `id`·`createDate`·`modifyDate`·`content` 확인
 - **설명**
   - 기대값은 글의 댓글 리스트에서 id 로 찾는 `post.findCommentById(id)` 로 읽는다. 댓글을 글을 통해서 찾는다는 규칙을 테스트에서부터 쓴다.
   - 실패 확인 : 아직 없는 `Post.findCommentById()` 를 써서 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다.
+
+### 014-2 댓글 단건조회
+
+- **링크**
+- **원인** : 014-1 테스트가 실패한다. 글 안에서 id 로 댓글을 찾는 메서드와 단건조회 액션이 없다.
+- **작업**
+  - 추가 : `ApiV1PostCommentController.getItem(postId, id)` — `GET /api/v1/posts/{postId}/comments/{id}`, 응답 `PostCommentDto`
+  - 추가 : `Post.findCommentById(id)` — 댓글 리스트에서 id 가 같은 첫 댓글을 `Optional` 로 돌려준다
+- **설명**
+  - 경로 변수 두 개(`postId`, `id`)를 각각 `@PathVariable` 로 받는다.
+  - 글의 댓글 리스트 안에서만 찾으므로, 다른 글의 댓글 번호를 주소에 넣으면 찾지 못한다. 주소의 글과 댓글이 실제로 연결돼 있는지 따로 검사하지 않아도 된다.
+  - 글이나 댓글이 없으면 `.get()` 에서 `NoSuchElementException` 이 나고 008-2 의 처리로 404 가 된다.
+  - 결과 : `ApiV1PostCommentControllerTest.t2` 통과.
