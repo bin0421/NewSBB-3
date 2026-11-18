@@ -189,7 +189,7 @@
 
 ### 009-1 글 작성 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/ee5a490145a94a1fe0963d0216fd4a0eeeb40b30)**
 - **원인** : 글을 새로 작성하는 API 가 필요하다. 먼저 `POST /api/v1/posts` 의 요청 본문과 응답을 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostControllerTest.t4` — JSON 본문 `{"title", "content"}` 로 `POST /api/v1/posts` 요청 후 처리한 메서드(`write`), 201, `resultCode` `"201-1"`, `msg` `"%d번 글이 작성되었습니다."`, `data` 에 담긴 새 글의 `id`·날짜·`title`·`content` 확인
@@ -198,3 +198,19 @@
   - 새 글의 id 는 미리 알 수 없으므로, 요청 뒤 가장 최근 글(`findLatest()`)을 DB 에서 꺼내 응답의 id·메시지와 대조한다.
   - `@Transactional` 테스트라 끝나면 작성한 글이 롤백되어 다른 테스트에 영향을 주지 않는다.
   - 실패 확인 : 아직 없는 `PostService.findLatest()` 를 써서 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다.
+
+### 009-2 글 작성
+
+- **링크**
+- **원인** : 009-1 테스트가 실패한다. 글을 작성하는 액션이 없고, `RsData` 의 `resultCode` 에 맞춰 HTTP 상태코드를 201 로 바꿔 줄 방법도 없다.
+- **작업**
+  - 추가 : `ApiV1PostController.write()` — `POST /api/v1/posts`, 요청 본문 `PostWriteReqBody(title, content)`, 응답 `RsData<PostDto>`
+  - 추가 : `ResponseAspect` — 컨트롤러가 돌려준 `RsData` 의 `statusCode` 를 HTTP 응답코드로 설정
+  - 추가 : `PostService.findLatest()`, `PostRepository.findFirstByOrderByIdDesc()`
+- **설명**
+  - `@RequestBody` 는 JSON 본문을 레코드 `PostWriteReqBody` 로 바꾼다. 레코드 필드는 같은 클래스 안이라 `reqBody.title` 처럼 바로 읽는다.
+  - `save()` 는 `IDENTITY` 전략이라 INSERT 를 바로 실행하므로, 저장 직후 `post.getId()` 로 새 id 를 응답 메시지에 쓸 수 있다.
+  - `ResponseAspect` 는 `@Around` 로 `@RestController` 의 매핑 메서드 중 `RsData` 를 돌려주는 것만 감싼다. 메서드 실행 뒤 `"201-1"` 에서 계산된 201 을 `HttpServletResponse` 에 설정한다. 그래서 액션은 `ResponseEntity` 없이 `resultCode` 만으로 상태코드를 정한다. 주입된 `HttpServletResponse` 는 요청마다 현재 응답을 가리키는 프록시다.
+  - `findFirstByOrderByIdDesc()` 는 메서드 이름으로 쿼리를 만드는 Spring Data JPA 기능으로, id 내림차순 첫 번째 글을 찾는다.
+  - 아직 요청 값 검증은 없다. 빈 제목도 저장되는 문제는 010 에서 테스트로 드러내고 고친다.
+  - 결과 : `ApiV1PostControllerTest.t4` 통과.
