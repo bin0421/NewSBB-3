@@ -399,7 +399,7 @@
 
 ### 015-1 댓글 작성 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/9b3770a6ea0c086b399129dccec9b4ffb92ed425)**
 - **원인** : 글에 댓글을 다는 `POST /api/v1/posts/{postId}/comments` 가 필요하다. 먼저 요청 본문과 응답을 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostCommentControllerTest.t3` — `{"content": "내용"}` 으로 1번 글에 댓글 작성 요청 후 처리한 메서드(`write`), 201, `resultCode` `"201-1"`, `msg` `"%d번 댓글이 작성되었습니다."`, `data` 의 `id`·날짜·`content` 확인, 새 댓글의 id 가 양수인지 확인
@@ -407,3 +407,15 @@
   - 새 댓글은 1번 글의 댓글 리스트 마지막(`getLast()`)에 있다. 응답의 id·메시지를 그 댓글과 대조한다.
   - 참조 테스트에는 없는 `id` 양수 검사를 더했다. 새 댓글이 아직 DB 에 INSERT 되지 않았으면 id 가 0 인 채로 응답과 기대값이 둘 다 0 이 되어 검사를 통과해 버리기 때문이다.
   - 실패 확인 : 댓글 주소에 `POST` 를 받는 매핑이 없어 `No handler` 로 실패한다.
+
+### 015-2 댓글 작성 (저장 전 응답 실패)
+
+- **링크**
+- **원인** : 015-1 테스트가 실패한다. 댓글 주소에 `POST` 를 받는 액션이 없다.
+- **작업**
+  - 추가 : `ApiV1PostCommentController.write(postId, reqBody)` — `POST /api/v1/posts/{postId}/comments`, 요청 본문 `PostCommentWriteReqBody(content)`, 응답 `RsData<PostCommentDto>`
+  - 추가 : `PostService.writeComment(post, content)`
+- **설명**
+  - 요청 본문의 `content` 에 `@NotBlank`, `@Size(min = 2, max = 100)` 를 걸고 `@Valid` 로 검사한다. 저장은 004·005 와 같이 `Post.addComment()` 로 글의 리스트에 넣고 `cascade = PERSIST` 에 맡긴다.
+  - 문제 : 리스트에 넣는 것만으로는 INSERT 가 나가지 않는다. INSERT 는 트랜잭션이 끝날 때(flush) 나가는데, 응답은 그보다 먼저 만들어진다. 그래서 응답을 만드는 시점의 새 댓글은 `id` 가 0 이고, `@CreatedDate` 를 채우는 감사 리스너도 아직 돌지 않아 날짜가 `null` 이다.
+  - 실패 확인 : 응답 메시지는 `"0번 댓글이 작성되었습니다."` 가 되고, 테스트는 날짜를 비교하는 줄에서 `NullPointerException: ... PostComment.getCreateDate() is null` 로 실패한다.
