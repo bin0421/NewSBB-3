@@ -141,7 +141,7 @@
 
 ### 007-1 글 단건조회 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/d3f7d5c07aa505c9e712b4e3dd3805cf256f0237)**
 - **원인** : 글 하나를 id 로 조회하는 API 가 필요하다. 먼저 `GET /api/v1/posts/{id}` 의 응답을 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostControllerTest.t2` — `GET /api/v1/posts/1` 을 처리한 메서드(`getItem`), 200, 1번 글의 `id`·`createDate`·`modifyDate`·`title`·`content` 확인
@@ -149,3 +149,15 @@
   - 샘플 데이터가 항상 먼저 들어가므로 1번 글은 반드시 있다. 기대값은 `postService.findById(1)` 로 읽는다.
   - 다건조회와 달리 응답이 배열이 아니라 객체 하나이므로 `$.title` 처럼 루트에서 바로 필드를 꺼낸다.
   - 실패 확인 : 아직 없는 `PostService.findById()` 를 써서 테스트 컴파일 단계에서 `cannot find symbol` 로 실패한다.
+
+### 007-2 글 단건조회
+
+- **링크**
+- **원인** : 007-1 테스트가 실패한다. id 로 글을 찾는 서비스 메서드와 단건조회 액션이 없다.
+- **작업**
+  - 추가 : `ApiV1PostController.getItem(id)` — `GET /api/v1/posts/{id}`, 응답 `PostDto`
+  - 추가 : `PostService.findById(id)` — `Optional<Post>` 를 돌려준다
+- **설명**
+  - `@GetMapping("/{id}")` 의 `{id}` 자리 값을 `@PathVariable int id` 가 받아 정수로 바꾼다.
+  - `findById()` 는 글이 없을 수도 있음을 `Optional` 로 드러낸다. 지금은 `.get()` 으로 바로 꺼내므로, 없는 id 를 요청하면 `NoSuchElementException` 이 난다. 이 문제는 008 에서 테스트로 드러내고 고친다.
+  - 결과 : `ApiV1PostControllerTest.t2` 통과.

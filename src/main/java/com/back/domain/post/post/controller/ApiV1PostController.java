@@ -25,4 +25,14 @@ public class ApiV1PostController {
                 .map(PostDto::new)
                 .toList();
     }
+
+    @GetMapping("/{id}")
+    @Transactional(readOnly = true)
+    public PostDto getItem(
+            @PathVariable int id
+    ) {
+        Post post = postService.findById(id).get();
+
+        return new PostDto(post);
+    }
 }
