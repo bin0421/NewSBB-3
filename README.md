@@ -459,10 +459,22 @@
 
 ### 017-1 댓글 삭제 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/6296d57daa8d11a21c45ebc2516cbbf3838eb682)**
 - **원인** : 댓글을 지우는 `DELETE /api/v1/posts/{postId}/comments/{id}` 가 필요하다. 먼저 응답과 결과를 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostCommentControllerTest.t5` — 1번 글의 1번 댓글 삭제 요청 후 처리한 메서드(`delete`), 200, `resultCode` `"200-1"`, `msg` `"1번 댓글이 삭제되었습니다."` 확인, DB 에서 다시 읽은 1번 글에 1번 댓글이 없고 댓글이 2건 남았는지 확인
 - **설명**
   - 참조 테스트는 응답만 검사한다. 여기서는 `EntityManager` 로 `flush()`(쌓인 변경을 DB 로 보냄) → `clear()`(영속성 컨텍스트 비움) 한 뒤 글을 다시 조회한다. 메모리 속 리스트가 아니라 DB 에서 정말 지워졌는지를 확인하기 위해서다.
   - 실패 확인 : 댓글 단건 주소에 `DELETE` 를 받는 매핑이 없어 `No handler` 로 실패한다.
+
+### 017-2 댓글 삭제 (DB 에 남음 실패)
+
+- **링크**
+- **원인** : 017-1 테스트가 실패한다. 댓글 삭제 액션이 없다.
+- **작업**
+  - 추가 : `ApiV1PostCommentController.delete(postId, id)` — `DELETE /api/v1/posts/{postId}/comments/{id}`, 응답 `RsData<Void>`
+  - 추가 : `Post.deleteComment(postComment)`, `PostService.deleteComment(post, postComment)`
+- **설명**
+  - 댓글도 글을 통해 지운다. `deleteComment()` 는 글의 댓글 리스트에서 댓글을 빼기만 한다. 비교는 `BaseEntity.equals()` 의 id 비교를 쓴다.
+  - 문제 : 리스트에서 빼는 것은 메모리 속 연결을 끊을 뿐이다. 관계의 주인은 `PostComment.post` 이고, 리스트 쪽(`mappedBy`)의 변화만으로는 JPA 가 아무 SQL 도 만들지 않는다.
+  - 실패 확인 : 응답은 기대대로지만, `flush()`·`clear()` 뒤 DB 에서 다시 읽은 1번 글에 1번 댓글이 그대로 있어 `Expecting an empty Optional but was containing value: ...PostComment@1` 로 실패한다.
