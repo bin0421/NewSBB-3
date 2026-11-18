@@ -258,7 +258,7 @@
 
 ### 010-4 내용 검증
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/a7b036a1f2878b58f98b4913eacaf10d78aa6f69)**
 - **원인** : 010-3 테스트가 실패한다. 내용에 검증 제약이 없다.
 - **작업**
   - 수정 : `PostWriteReqBody.content`
@@ -267,3 +267,13 @@
 - **설명**
   - 010-2 에서 만든 `@Valid` 와 `MethodArgumentNotValidException` 처리가 그대로 쓰이므로 제약 애너테이션만 추가하면 된다. 위반 메시지 형식도 제목과 같다.
   - 결과 : `ApiV1PostControllerTest.t6` 통과.
+
+### 010-5 잘못된 JSON 글 작성 테스트 추가 (실패)
+
+- **링크**
+- **원인** : 문법이 깨진 JSON 을 보내면 스프링 기본 처리로 400 은 나가지만 본문이 비어 있다. 다른 오류와 같은 `RsData` 형식으로 알려 줘야 한다.
+- **작업**
+  - 추가 : 테스트 `ApiV1PostControllerTest.t7` — 따옴표가 빠진 JSON 으로 작성 요청 시 400, `resultCode` `"400-1"`, `msg` `"요청 본문이 올바르지 않습니다."` 확인
+- **설명**
+  - JSON 을 레코드로 바꾸는 단계에서 실패하므로 검증(`@Valid`)까지 가지 못한다. 그래서 010-2 의 처리로는 잡히지 않는다.
+  - 실패 확인 : 상태코드는 기본 처리(`DefaultHandlerExceptionResolver`)로 400 이 되지만 본문이 없어 `No value at JSON path "$.resultCode"` 로 실패한다.
