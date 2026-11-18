@@ -46,6 +46,32 @@ public class ApiV1PostCommentController {
     }
 
 
+    public record PostCommentModifyReqBody(
+            @NotBlank
+            @Size(min = 2, max = 100)
+            String content
+    ) {
+    }
+
+    @PutMapping("/{id}")
+    @Transactional
+    public RsData<Void> modify(
+            @PathVariable int postId,
+            @PathVariable int id,
+            @RequestBody @Valid PostCommentModifyReqBody reqBody
+    ) {
+        Post post = postService.findById(postId).get();
+        PostComment postComment = post.findCommentById(id).get();
+
+        postService.modifyComment(postComment, reqBody.content);
+
+        return new RsData<>(
+                "200-1",
+                "%d번 댓글이 수정되었습니다.".formatted(postComment.getId())
+        );
+    }
+
+
     public record PostCommentWriteReqBody(
             @NotBlank
             @Size(min = 2, max = 100)

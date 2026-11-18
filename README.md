@@ -437,10 +437,22 @@
 
 ### 016-1 댓글 수정 테스트 추가 (실패)
 
-- **링크**
+- **[링크](https://github.com/bin0421/NewSBB-3/commit/b4cbe864a083eae969e6a7842be98b3ecd19b022)**
 - **원인** : 댓글 내용을 고치는 `PUT /api/v1/posts/{postId}/comments/{id}` 가 필요하다. 먼저 응답과 결과를 테스트로 정한다.
 - **작업**
   - 추가 : 테스트 `ApiV1PostCommentControllerTest.t4` — 1번 글의 1번 댓글을 `{"content": "내용 new"}` 로 수정 요청 후 처리한 메서드(`modify`), 200, `resultCode` `"200-1"`, `msg` `"1번 댓글이 수정되었습니다."` 확인, 다시 찾은 댓글의 내용이 바뀌었는지 확인
 - **설명**
   - 글 수정 테스트(011-1)와 같은 이유로, 참조 테스트에 없는 내용 변경 확인 검사를 더했다.
   - 실패 확인 : 댓글 단건 주소에 `PUT` 을 받는 매핑이 없어 `No handler` 로 실패한다.
+
+### 016-2 댓글 수정
+
+- **링크**
+- **원인** : 016-1 테스트가 실패한다. 댓글 수정 액션과 댓글 내용을 바꾸는 메서드가 없다.
+- **작업**
+  - 추가 : `ApiV1PostCommentController.modify(postId, id, reqBody)` — `PUT /api/v1/posts/{postId}/comments/{id}`, 요청 본문 `PostCommentModifyReqBody(content)`, 응답 `RsData<Void>`
+  - 추가 : `PostComment.modify(content)`, `PostService.modifyComment(postComment, content)`
+- **설명**
+  - 글 수정(011-2)과 같이 변경 감지로 UPDATE 한다. 글을 거쳐 찾은 댓글도 같은 영속성 컨텍스트가 관리하므로 필드만 바꾸면 된다.
+  - 요청 레코드는 작성용(`PostCommentWriteReqBody`)과 나눠 두되 제약은 같다.
+  - 결과 : `ApiV1PostCommentControllerTest.t4` 통과.
